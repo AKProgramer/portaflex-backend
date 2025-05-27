@@ -1,136 +1,96 @@
-const Portfolio = require('../models/portfolio');
+const Portfolio = require('../models/Portfolio');
+const mongoose = require('mongoose');
 
-// @desc    Create a new portfolio
-// @route   POST /api/portfolios
-// @access  Private
-exports.createPortfolio = async (req, res) => {
+// Controller function to create a new portfolio
+const createPortfolio = async (req, res) => {
   try {
-    const { title, description, templateId, sections, theme } = req.body;
+    const {title, description } = req.body;
 
+    // Create a new portfolio
     const newPortfolio = new Portfolio({
-      userId: req.user._id,
-      title,
-      description,
-      templateId,
-      sections: sections || [],
-      theme: theme || 'default',
+      title: title,
+      description: description || '',
+      sections: [],
+      isPublished: false,
     });
 
-    const saved = await newPortfolio.save();
-    res.status(201).json(saved);
+    // Save the new portfolio to the database
+    await newPortfolio.save();
+
+    // Send a success response
+    res.status(201).json({
+      message: 'Portfolio created successfully!',
+      portfolio: newPortfolio,
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error creating portfolio', error: error.message });
+    console.error('Error creating portfolio:', error);
+    res.status(500).json({ error: 'Something went wrong while creating the portfolio.' });
   }
 };
 
-// @desc    Get a portfolio by ID
-// @route   GET /api/portfolios/:id
-// @access  Public (or Private based on user logic)
-exports.getPortfolioById = async (req, res) => {
+// Controller function to update a portfolio by adding a new section
+const addSectionToPortfolio = async (req, res) => {
+    try {
+      const { portfolioId, title, type, data } = req.body;
+      let sectionData = { ...data };
+  
+      // If a file is uploaded, add it to the section data
+      if (req.file) {
+        // You can decide how to handle files for different sections dynamically
+        sectionData.image = req.file.path;  // This assumes you're uploading a single file for simplicity
+      }
+  
+      // Find the existing portfolio by ID
+      const portfolio = await Portfolio.findById(portfolioId);
+  
+      if (!portfolio) {
+        return res.status(404).json({ error: 'Portfolio not found.' });
+      }
+  
+      // Create the new section to be added
+      const newSection = {
+        type: type || 'custom',  // Default to 'custom' if no type is provided
+        title: title,  // Section title
+        data: sectionData,  // Dynamically populated data
+        visible: true,
+        order: portfolio.sections.length, // Append new section at the end
+      };
+  
+      // Push the new section to the portfolio's sections array
+      portfolio.sections.push(newSection);
+  
+      // Save the updated portfolio
+      await portfolio.save();
+  
+      // Send a success response
+      res.status(200).json({
+        message: 'Section added to the portfolio successfully!',
+        portfolio,
+      });
+    } catch (error) {
+      console.error('Error adding section to portfolio:', error);
+      res.status(500).json({ error: 'Something went wrong while adding the section.' });
+    }
+  };
+  
+// Controller function to get a portfolio by ID
+const getPortfolioById = async (req, res) => {
   try {
-    const portfolio = await Portfolio.findById(req.params.id);
-    if (!portfolio) return res.status(404).json({ message: 'Portfolio not found' });
+    const portfolio = await Portfolio.findOne({ title: req.params.title });
 
-    // Optionally add access control if it's private
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
     res.status(200).json(portfolio);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching portfolio', error: error.message });
+    console.error('Error getting portfolio by ID:', error);
+    res.status(500).json({ error: 'Something went wrong while retrieving the portfolio.' });
   }
 };
 
-// @desc    Get all portfolios for the current user
-// @route   GET /api/portfolios/user/all
-// @access  Private
-exports.getUserPortfolios = async (req, res) => {
-  try {
-    const portfolios = await Portfolio.find({ userId: req.user._id }).sort({ updatedAt: -1 });
-    res.status(200).json(portfolios);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching user portfolios', error: error.message });
-  }
-};
-
-// @desc    Update a portfolio by ID
-// @route   PUT /api/portfolios/:id
-// @access  Private
-exports.updatePortfolio = async (req, res) => {
-  try {
-    const portfolio = await Portfolio.findById(req.params.id);
-
-    if (!portfolio) return res.status(404).json({ message: 'Portfolio not found' });
-    if (portfolio.userId.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: 'Not authorized' });
-
-    const { title, description, sections, theme } = req.body;
-
-    portfolio.title = title || portfolio.title;
-    portfolio.description = description || portfolio.description;
-    portfolio.sections = sections || portfolio.sections;
-    portfolio.theme = theme || portfolio.theme;
-
-    const updated = await portfolio.save();
-    res.status(200).json(updated);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating portfolio', error: error.message });
-  }
-};
-
-// @desc    Delete a portfolio by ID
-// @route   DELETE /api/portfolios/:id
-// @access  Private
-exports.deletePortfolio = async (req, res) => {
-  try {
-    const portfolio = await Portfolio.findById(req.params.id);
-
-    if (!portfolio) return res.status(404).json({ message: 'Portfolio not found' });
-    if (portfolio.userId.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: 'Not authorized' });
-
-    await portfolio.deleteOne();
-    res.status(200).json({ message: 'Portfolio deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error deleting portfolio', error: error.message });
-  }
-};
-
-// @desc    Publish a portfolio (make it live)
-// @route   POST /api/portfolios/:id/publish
-// @access  Private
-exports.publishPortfolio = async (req, res) => {
-  try {
-    const portfolio = await Portfolio.findById(req.params.id);
-
-    if (!portfolio) return res.status(404).json({ message: 'Portfolio not found' });
-    if (portfolio.userId.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: 'Not authorized' });
-
-    portfolio.isPublished = true;
-    await portfolio.save();
-
-    res.status(200).json({ message: 'Portfolio published successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error publishing portfolio', error: error.message });
-  }
-};
-
-// @desc    Request deployment of portfolio (for paid users)
-// @route   POST /api/portfolios/:id/deploy
-// @access  Private
-exports.requestDeployment = async (req, res) => {
-  try {
-    const { customDomain } = req.body;
-    const portfolio = await Portfolio.findById(req.params.id);
-
-    if (!portfolio) return res.status(404).json({ message: 'Portfolio not found' });
-    if (portfolio.userId.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: 'Not authorized' });
-
-    portfolio.deploymentStatus = 'pending';
-    if (customDomain) portfolio.customDomain = customDomain;
-
-    await portfolio.save();
-    res.status(200).json({ message: 'Deployment request submitted. We will process it within 1 business day.' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error requesting deployment', error: error.message });
-  }
+module.exports = {
+  createPortfolio,
+  addSectionToPortfolio,
+  getPortfolioById,
 };

@@ -1,16 +1,45 @@
+require('dotenv').config();
 const express = require('express');
-const app = express();
-const PORT = 8080;
+const mongoose = require('mongoose');
+const cors = require('cors'); // Import CORS middleware
+const portfolioRoutes = require('./routes/portfolioRoutes');
 
-// Middleware to parse JSON
+const app = express();
+
+// Load environment variables
+const PORT = process.env.PORT || 8080;
+const MONGO_URI = process.env.MONGO_URI;
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI not found in environment variables');
+  process.exit(1);
+}
+
+if (!FRONTEND_URL) {
+  console.error('❌ FRONTEND_URL not found in environment variables');
+  process.exit(1);
+}
+
+// Middleware
+app.use(cors({ origin: FRONTEND_URL })); // ✅ Allow only the frontend URL
 app.use(express.json());
 
-// Sample route
-app.get('/', (req, res) => {
-  res.send('Hello from Express!');
-});
+// Routes
+app.use(portfolioRoutes);
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// Connect to MongoDB and start server
+mongoose.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => {
+  console.log('✅ Connected to MongoDB');
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+})
+.catch((err) => {
+  console.error('❌ MongoDB connection failed:', err.message);
+  process.exit(1);
 });

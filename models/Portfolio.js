@@ -5,10 +5,6 @@ const SectionSchema = new mongoose.Schema({
     type: String, // e.g. 'about', 'projects', 'experience', 'education', 'skills', etc.
     required: true,
   },
-  title: {
-    type: String, // Section title (can be customized by user)
-    required: true,
-  },
   data: {
     type: mongoose.Schema.Types.Mixed, // Flexible data structure for each section
     required: true,
@@ -16,42 +12,23 @@ const SectionSchema = new mongoose.Schema({
   visible: {
     type: Boolean,
     default: true,
-  },
-  order: {
-    type: Number, // To control the display order of sections
-    default: 0,
-  },
+  }
 });
 
 const PortfolioSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-
-    templateId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Template',
-      required: true,
-    },
-
     title: {
       type: String,
       required: true,
+      unique: true, // Ensure each portfolio has a unique title
     },
-
+    // this will remove when each portfolio is connected with user model
+    username: String,
     description: {
       type: String,
     },
 
     sections: [SectionSchema],
-
-    theme: {
-      type: String, // e.g. 'light', 'dark', or custom theme name
-      default: 'default',
-    },
 
     isPublished: {
       type: Boolean,
