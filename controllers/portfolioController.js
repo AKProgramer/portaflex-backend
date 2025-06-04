@@ -88,9 +88,36 @@ const getPortfolioById = async (req, res) => {
     res.status(500).json({ error: 'Something went wrong while retrieving the portfolio.' });
   }
 };
+const getPortfolioByID = async (req, res) => {
+  console.log(req)
+  try {
+    const portfolio = await Portfolio.findOne({ _id: req.params.id });
+
+    if (!portfolio) {
+      return res.status(404).json({ error: 'Portfolio not found.' });
+    }
+
+    res.status(200).json(portfolio);
+  } catch (error) {
+    console.error('Error getting portfolio by ID:', error);
+    res.status(500).json({ error: 'Something went wrong while retrieving the portfolio.' });
+  }
+};
+// Controller function to get all portfolios
+const getAllPortfolios = async (req, res) => {
+  try {
+    const portfolios = await Portfolio.find();
+    res.status(200).json(portfolios);
+  } catch (error) {
+    console.error('Error getting all portfolios:', error);
+    res.status(500).json({ error: 'Something went wrong while retrieving portfolios.' });
+  }
+};
 
 module.exports = {
   createPortfolio,
   addSectionToPortfolio,
   getPortfolioById,
+  getAllPortfolios,
+  getPortfolioByID
 };

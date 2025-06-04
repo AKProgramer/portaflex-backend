@@ -41,4 +41,11 @@ mongoose.connect(MONGO_URI, {
   process.exit(1);
 });
 
+// Start the server only if not running in a serverless environment (like Vercel)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+}
+
 module.exports = app;

@@ -4,7 +4,9 @@ const upload = require('../middlewares/multer'); // Assuming you have a multer s
 const {
  createPortfolio,
  addSectionToPortfolio,
- getPortfolioById
+ getPortfolioById,
+ getAllPortfolios,
+ getPortfolioByID
 } = require('../controllers/portfolioController');
 
 // Define the POST route to create a portfolio with resume upload
@@ -14,9 +16,13 @@ router.post('/portfolio/create',  createPortfolio);
 router.post('/portfolio/add-section', upload.single('image'),  addSectionToPortfolio);
 
 // Route to get a portfolio by its ID
-router.get('/portfolio/:title',  getPortfolioById);
+router.get('/portfolio/title/:title',  getPortfolioById);
+router.get('/portfolio/id/:id', getPortfolioByID)
+// this route name have to change later
+// Route to get all portfolios
+router.get('/portfolios', getAllPortfolios);
 
 module.exports = router;
 
 
- 
+

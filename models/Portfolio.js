@@ -22,6 +22,8 @@ const PortfolioSchema = new mongoose.Schema(
       required: true,
       unique: true, // Ensure each portfolio has a unique title
     },
+    imageUrl: String,
+    category: String,
     // this will remove when each portfolio is connected with user model
     username: String,
     description: {
@@ -38,7 +40,7 @@ const PortfolioSchema = new mongoose.Schema(
     customDomain: {
       type: String,
     },
-
+    vercelDeploymentLink: String,
     deploymentStatus: {
       type: String,
       enum: ['draft', 'pending', 'deployed'],
